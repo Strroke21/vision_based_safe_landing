@@ -47,8 +47,6 @@ def send_land_message(x,y):
     vehicle.send_mavlink(msg)
     vehicle.flush()
 
-vehicle  = connectMyCopter
-
 vehicle = connectMyCopter()
 # SETUP PARAMETERS TO ENABLE PRECISION LANDING
 vehicle.parameters['PLND_ENABLED'] = 1
