@@ -23,7 +23,7 @@ flatness = 0.2
 landing_velocity = -0.3
 disparity_to_depth_scale = 0.0010000000474974513
 
-conn_string = 'tcp:127.0.0.1:5763' #'/dev/ttyACM0'
+conn_string = '/dev/ttyACM0'
 rng_alt = [0]
 counter = 0
 safe_spot_dist_min = 1
