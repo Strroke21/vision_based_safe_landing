@@ -24,10 +24,10 @@ landing_velocity = -0.3
 disparity_to_depth_scale = 0.0010000000474974513
 
 conn_string = '/dev/ttyACM0'
-rng_alt = [0]
+rng_alt = 0
 counter = 0
 safe_spot_dist_min = 1
-dist_to_spot = [0]
+dist_to_spot = 0
 
 #square pattern for landing
 left_x = -5
@@ -71,7 +71,7 @@ def send_velocity_setpoint(vehicle, vx, vy, vz):
         0,                          # time_boot_ms (not used)
         vehicle.target_system,       # target_system
         vehicle.target_component,    # target_component
-        mavutil.mavlink.MAV_FRAME_LOCAL_NED,  # frame
+        mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED,  # frame
         0b0000111111000111,        # type_mask (only vx, vy, vz, yaw_rate)
         0, 0, 0,                    # position (not used)
         vx, vy, vz,                 # velocity in m/s
@@ -86,7 +86,7 @@ def send_position_setpoint(vehicle, pos_x, pos_y, pos_z):
         0,                          # time_boot_ms (not used)
         vehicle.target_system,       # target_system
         vehicle.target_component,    # target_component
-        mavutil.mavlink.MAV_FRAME_LOCAL_NED,  # frame
+        mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED,  # frame
         0b110111111000,        # type_mask (only for postion)
         pos_x, pos_y, pos_z,   # position 
         0, 0, 0,                 # velocity in m/s (not used)
@@ -109,14 +109,15 @@ def send_distance_message(vehicle,z):
     vehicle.mav.send(msg)
 
 def get_rangefinder_data(vehicle):
+    global rng_alt
     # Wait for a DISTANCE_SENSOR or RANGEFINDER message
     msg = vehicle.recv_match(type='DISTANCE_SENSOR', blocking=False)
     if msg is not None:
         dist = msg.current_distance # in meters
         if dist is not None:
-            rng_alt[0] = dist/100
+            rng_alt = dist/100
 
-    return rng_alt[0]
+    return rng_alt
             
 
 def set_parameter(vehicle, param_name, param_value, param_type=mavutil.mavlink.MAV_PARAM_TYPE_REAL32):
@@ -148,6 +149,7 @@ def flightMode(vehicle):
     return mode
 
 def distance_to_safespot(vehicle, x_dist, y_dist):
+    global dist_to_spot
     # Get the drone's local position (NED frame)
     pos_msg = vehicle.recv_match(type='LOCAL_POSITION_NED', blocking=True)
     attitude_msg = vehicle.recv_match(type='ATTITUDE', blocking=True)
@@ -164,9 +166,9 @@ def distance_to_safespot(vehicle, x_dist, y_dist):
         
         # Compute the Euclidean distance
         distance = math.hypot(x_ned - pos_x, y_ned - pos_y)
-        dist_to_spot[0] = distance
+        dist_to_spot = distance
 
-    return dist_to_spot[0]
+    return dist_to_spot
 
 class SafeLander(Node):
     def __init__(self):
