@@ -20,7 +20,7 @@ height = 480
 final_alt = 2
 flatness = 0.2
 
-landing_velocity = -0.3
+landing_velocity = 0.3 #positive (down) negative (up)
 disparity_to_depth_scale = 0.0010000000474974513
 
 conn_string = '/dev/ttyACM0'
@@ -165,8 +165,7 @@ def distance_to_safespot(vehicle, x_dist, y_dist):
         y_ned = pos_y + (x_dist * math.sin(yaw) + y_dist * math.cos(yaw))
         
         # Compute the Euclidean distance
-        distance = math.hypot(x_ned - pos_x, y_ned - pos_y)
-        dist_to_spot = distance
+        dist_to_spot = math.hypot(x_ned - pos_x, y_ned - pos_y)
 
     return dist_to_spot
 
