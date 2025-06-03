@@ -84,7 +84,6 @@ def global_position(vehicle):
             lon = msg.lon / 1e7  
             return lat, lon
     
-
 def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude, current_lat,current_lon):
     frame = cv2.resize(frame, (640, 480))
     img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -153,44 +152,56 @@ def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude,
     elevated_mask_bgr[boundary_mask == 255] = [0, 0, 255]       # red (boundary)
     elevated_mask_bgr[green_mask_dilated == 255] = [0, 255, 0]  # green (flat & safe)
 
-        # Step 1: Find the largest green region
+    # Step 1: Get the largest green contour (already done)
     contours, _ = cv2.findContours(green_mask_dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     max_contour = max(contours, key=cv2.contourArea, default=None)
 
     central_pixel = None
     if max_contour is not None and cv2.contourArea(max_contour) > 0:
-        M = cv2.moments(max_contour)
-        if M['m00'] != 0:
-            cx = int(M['m10'] / M['m00'])
-            cy = int(M['m01'] / M['m00'])
-            central_pixel = (cx, cy)
+        # Step 2: Create full mask of the largest green region
+        largest_green_mask = np.zeros((h, w), dtype=np.uint8)
+        cv2.drawContours(largest_green_mask, [max_contour], -1, 255, -1)
 
-            # Step 2: Convert pixel to meters
-            img_center_x = w / 2
-            img_center_y = h / 2
+        # Step 3: Remove elevated (white) region from it
+        valid_safe_area = cv2.bitwise_and(largest_green_mask, cv2.bitwise_not(elevated_mask))
 
-            angle_per_pixel_x = hfov / w
-            angle_per_pixel_y = vfov / h
+        # Step 4: Clean up with morphological operations (remove noise)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        valid_safe_area = cv2.erode(valid_safe_area, kernel, iterations=1)
 
-            delta_x = (cx - img_center_x) * angle_per_pixel_x
-            delta_y = (cy - img_center_y) * angle_per_pixel_y
+        # Step 5: Distance transform to get most central pixel
+        dist_map = cv2.distanceTransform(valid_safe_area, cv2.DIST_L2, 5)
+        minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(dist_map)
+        central_pixel = maxLoc
+        cx, cy = central_pixel
 
-            x_meters = math.tan(delta_x) * altitude
-            y_meters = math.tan(delta_y) * altitude
+        # Step 2: Convert pixel to meters
+        img_center_x = w / 2
+        img_center_y = h / 2
 
-            # Step 3: Draw a blue circle at the central pixel
-            cv2.circle(elevated_mask_bgr, central_pixel, 5, (255, 0, 0), -1)
+        angle_per_pixel_x = hfov / w
+        angle_per_pixel_y = vfov / h
 
-            print(f"Central pixel (px): ({cx}, {cy}) → Coordinates in meters from center: ({x_meters:.2f} m, {y_meters:.2f} m)")
+        delta_x = (cx - img_center_x) * angle_per_pixel_x
+        delta_y = (cy - img_center_y) * angle_per_pixel_y
 
-            coords = target_coords(current_lat,current_lon,x_meters,y_meters)
-            print(f"Target coordinates (lat, lon): {coords}")
-            cv2.saveImage("safe_spot.png", elevated_mask_bgr)
-            cv2.saveImage("Original_Image.png", frame)
-            return coords
-        
+        x_meters = math.tan(delta_x) * altitude
+        y_meters = math.tan(delta_y) * altitude
+
+        # Step 3: Draw a blue circle at the central pixel
+        cv2.circle(elevated_mask_bgr, central_pixel, 5, (255, 0, 0), -1)
+
+        print(f"Central pixel (px): ({cx}, {cy}) → Coordinates in meters from center: ({x_meters:.2f} m, {y_meters:.2f} m)")
+
+        coords = target_coords(current_lat,current_lon,x_meters,y_meters)
+        print(f"Target coordinates (lat, lon): {coords}")
+        cv2.saveImage("depth_segmentation.png", elevated_mask_bgr)
+        cv2.saveImage("Original_Frame.png", frame)
+        return coords
+    
     else:
-        return global_position(vehicle)
+        return global_position(vehicle)  
+
 
 def connect(connection_string):
 
