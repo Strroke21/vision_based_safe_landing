@@ -77,11 +77,12 @@ def target_coords(lat,lon,x,y):
     return tar_lat, tar_lon
 
 def global_position(vehicle):
-    msg = vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-    if msg:
-        lat = msg.lat / 1e7  # Convert from int to degrees
-        lon = msg.lon / 1e7  
-        return lat, lon
+    while True:
+        msg = vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+        if msg:
+            lat = msg.lat / 1e7  # Convert from int to degrees
+            lon = msg.lon / 1e7  
+            return lat, lon
     
 
 def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude, current_lat,current_lon):
@@ -189,7 +190,7 @@ def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude,
             return coords
         
     else:
-        return get_local_position(vehicle)
+        return global_position(vehicle)
 
 def connect(connection_string):
 
