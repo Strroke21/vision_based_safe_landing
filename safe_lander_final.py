@@ -6,7 +6,7 @@ from pymavlink import mavutil
 import torch
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from transformers import DPTForDepthEstimation, DPTImageProcessor
 from math import radians, cos, sin, sqrt, atan2
@@ -24,8 +24,8 @@ model.to(device)
 model.eval()
 
 feature_extractor = DPTImageProcessor.from_pretrained("Intel/dpt-hybrid-midas")
-red_boundary_threshold = 0.05
-green_area_threshold = 0.8
+red_boundary_threshold = 0.05 # Percentage of red boundary as buffer around elevated area
+green_area_threshold = 0.8 # Percentage of green area to consider for safe landing
 
 MAX_DISTANCE = 10
 
@@ -37,6 +37,7 @@ height = 480
 
 final_alt = 2
 flatness = 0.2
+lander_alt = 30 #meters
 
 landing_velocity = 0.3 #positive (down) negative (up)
 disparity_to_depth_scale = 0.0010000000474974513
@@ -195,8 +196,8 @@ def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude,
 
         coords = target_coords(current_lat,current_lon,x_meters,y_meters)
         print(f"Target coordinates (lat, lon): {coords}")
-        cv2.saveImage("depth_segmentation.png", elevated_mask_bgr)
-        cv2.saveImage("Original_Frame.png", frame)
+        cv2.imwrite("depth_segmentation.png", elevated_mask_bgr)
+        cv2.imwrite("Original_Frame.png", frame)
         return coords
     
     else:
@@ -439,11 +440,11 @@ class SafeLander(Node):
 def main(args=None):
     while True:
         mode = str(flightMode(vehicle))
-        if mode=='LAND':
+        altitude = get_rangefinder_data(vehicle)
+        if (mode=='LAND') and (altitude <= lander_alt):
             break
         else:
-            print(f"Vehicle is not in LAND mode: {mode}")
-            print("Waiting for LAND mode...")
+            print(f"Current mode: {mode} Curent altitude: {altitude:.2f} m")
 
     VehicleMode(vehicle, 'GUIDED')
     print("Vehicle in GUIDED mode")
