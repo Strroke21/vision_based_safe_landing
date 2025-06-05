@@ -196,19 +196,26 @@ def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude,
 
         coords = target_coords(current_lat,current_lon,x_meters,y_meters)
         print(f"Target coordinates (lat, lon): {coords}")
-        cv2.imwrite("depth_segmentation.png", elevated_mask_bgr)
-        cv2.imwrite("Original_Frame.png", frame)
+        timestamp = str(int(time.time()))
+        cv2.imwrite("depth_" + timestamp + ".png", elevated_mask_bgr)
+        cv2.imwrite("original_" + timestamp +".png", frame)
+        print("Images saved with timestamp:", timestamp)
         return coords
     
     else:
+        print("No safe landing spot found.")
         return global_position(vehicle)  
 
 
 def connect(connection_string):
+    while True:
+        try:
+            vehicle =  mavutil.mavlink_connection(connection_string)
 
-    vehicle =  mavutil.mavlink_connection(connection_string)
-
-    return vehicle
+            return vehicle
+        except Exception as e:
+            print(f"Connection failed: {e}")
+            time.sleep(1)  
 
 def enable_data_stream(vehicle,stream_rate):
 
@@ -461,3 +468,5 @@ if __name__ == '__main__':
     print(f"Vehicle connected: {vehicle}")
     enable_data_stream(vehicle, stream_rate=100)
     main()
+
+
