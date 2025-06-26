@@ -36,6 +36,15 @@ def connect(connection_string):
 
     return vehicle
 
+def enable_data_stream(vehicle,stream_rate):
+
+    vehicle.wait_heartbeat()
+    vehicle.mav.request_data_stream_send(
+    vehicle.target_system, 
+    vehicle.target_component,
+    mavutil.mavlink.MAV_DATA_STREAM_ALL,
+    stream_rate,1)
+
 def target_coords(lat, lon, north_offset_m, east_offset_m, heading_deg):
     """
     lat, lon: current GPS
@@ -205,6 +214,8 @@ def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude,
         return None
 
 vehicle = connect('/dev/ttyACM0')
+enable_data_stream(vehicle, 100)
+time.sleep(1)
 counter = 0
 
 while True:
