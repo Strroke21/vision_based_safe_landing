@@ -32,9 +32,6 @@ MAX_DISTANCE = 10
 hfov = 87 * (math.pi/180)
 vfov = 58 * (math.pi/180)
 
-width = 848
-height = 480
-
 final_alt = 2
 flatness = 0.2
 lander_alt = 30 #meters
@@ -66,11 +63,23 @@ def goto_waypoint(vehicle,latitude, longitude, altitude):
     )
     vehicle.mav.send(msg)
 
-def target_coords(lat,lon,x,y):
+def target_coords(lat, lon, north_offset_m, east_offset_m, heading_deg):
+    """
+    lat, lon: current GPS
+    north_offset_m: forward offset (from image)
+    east_offset_m: right offset (from image)
+    heading_deg: drone heading in degrees (0° = North, clockwise)
+    """
+    # Convert heading to radians
+    heading_rad = math.radians(heading_deg)
 
-    R = 6378137
-    d_lat = x / R
-    d_lon = y / (R * math.cos(math.radians(lat))) 
+    # Rotate x, y based on heading
+    x_rot = east_offset_m * math.cos(heading_rad) - north_offset_m * math.sin(heading_rad)
+    y_rot = east_offset_m * math.sin(heading_rad) + north_offset_m * math.cos(heading_rad)
+
+    R = 6378137  # Earth radius
+    d_lat = y_rot / R
+    d_lon = x_rot / (R * math.cos(math.radians(lat)))
 
     tar_lat = lat + math.degrees(d_lat)
     tar_lon = lon + math.degrees(d_lon)
@@ -83,7 +92,8 @@ def global_position(vehicle):
         if msg:
             lat = msg.lat / 1e7  # Convert from int to degrees
             lon = msg.lon / 1e7  
-            return lat, lon
+            hdg = msg.hdg / 100  
+            return lat, lon, hdg
     
 def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude, current_lat,current_lon):
     frame = cv2.resize(frame, (640, 480))
@@ -186,15 +196,17 @@ def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude,
         delta_x = (cx - img_center_x) * angle_per_pixel_x
         delta_y = (cy - img_center_y) * angle_per_pixel_y
 
-        x_meters = math.tan(delta_x) * altitude
-        y_meters = math.tan(delta_y) * altitude
+
+        north_meters = math.tan(delta_x) * altitude
+        east_meters = -math.tan(delta_y) * altitude
+
+        heading = global_position(vehicle)[2]  
 
         # Step 3: Draw a blue circle at the central pixel
         cv2.circle(elevated_mask_bgr, central_pixel, 5, (255, 0, 0), -1)
+        print(f"Central pixel (px): ({cx}, {cy}) → Coordinates in meters from center: ({east_meters:.2f} m, {north_meters:.2f} m)")
 
-        print(f"Central pixel (px): ({cx}, {cy}) → Coordinates in meters from center: ({x_meters:.2f} m, {y_meters:.2f} m)")
-
-        coords = target_coords(current_lat,current_lon,x_meters,y_meters)
+        coords = target_coords(current_lat,current_lon,east_meters,north_meters,heading)
         print(f"Target coordinates (lat, lon): {coords}")
         timestamp = str(int(time.time()))
         cv2.imwrite("depth_" + timestamp + ".png", elevated_mask_bgr)
