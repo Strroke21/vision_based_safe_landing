@@ -13,6 +13,6 @@ https://github.com/isl-org/MiDaS/releases/download/v3_1/dpt_swin2_tiny_256.pt
 ## Safe Landing model Test
 
 ![alt text](/images/iitb_gymkhana.png)
-![alt text](/images/Screenshot from 2025-06-26 15-28-09.png)
-![alt text](/images/Screenshot from 2025-06-03 17-17-02.png)
+![alt text](/images/Screenshot15-28-09.png)
+![alt text](/images/Screenshot17-17-02.png)
 
