@@ -29,8 +29,8 @@ green_area_threshold = 0.8 # Percentage of green area to consider for safe landi
 
 MAX_DISTANCE = 10
 
-hfov = 87 * (math.pi/180)
-vfov = 58 * (math.pi/180)
+hfov = 90 * (math.pi/180)
+vfov = 65 * (math.pi/180)
 
 final_alt = 2
 flatness = 0.2

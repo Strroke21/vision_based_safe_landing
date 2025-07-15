@@ -18,8 +18,8 @@ model.eval()
 
 feature_extractor = DPTImageProcessor.from_pretrained("Intel/dpt-hybrid-midas")
 
-hfov = 87*(math.pi/180)
-vfov = 58*(math.pi/180)
+hfov = 90*(math.pi/180)
+vfov = 65*(math.pi/180)
 
 red_boundary_threshold = 0.05
 green_area_threshold = 0.8
@@ -204,8 +204,8 @@ def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude,
         print(f"Target coordinates (lat, lon): {coords}")
 
         timestamp = str(int(time.time()))
-        cv2.imwrite("depth_" + timestamp + ".png", elevated_mask_bgr)
-        cv2.imwrite("original_" + timestamp +".png", frame)
+        cv2.imwrite("depth_" + counter + ".png", elevated_mask_bgr)
+        cv2.imwrite("original_" + counter +".png", frame)
         print("Images saved with timestamp:", timestamp)
 
         return coords
