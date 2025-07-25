@@ -420,7 +420,7 @@ class SafeLander(Node):
             y_dist = altitude * np.tan(np.radians(x_ang))
 
             self.get_logger().info(f"Landing at x: {x_dist:.2f}, y: {y_dist:.2f}")
-            current_alt = get_rangefinder_data(vehicle)
+            current_alt = -get_rangefinder_data(vehicle) #negative up
             send_position_setpoint(vehicle, x_dist, y_dist, current_alt)
             cv2.rectangle(frame_colored, (top_left_x, top_left_y), (bottom_right_x, bottom_right_y), (0, 255, 0), 3)  # Green box
 
