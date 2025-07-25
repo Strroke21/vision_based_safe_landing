@@ -415,9 +415,9 @@ class SafeLander(Node):
             # Compute landing coordinates
             x_ang = (x_avg - width / 2) * (hfov / width)
             y_ang = (y_avg - height / 2) * (vfov / height)
-            x_dist = altitude * np.tan(np.radians(y_ang)) #swap x and y for down-facing camera
+            x_dist = altitude * np.tan(np.radians(-y_ang)) #swap x and y for down-facing camera
             y_dist = altitude * np.tan(np.radians(x_ang))
-            
+
             send_land_message(vehicle, x_ang, y_ang)
             self.get_logger().info(f"Landing at x: {x_dist:.2f}, y: {y_dist:.2f}")
             cv2.rectangle(frame_colored, (top_left_x, top_left_y), (bottom_right_x, bottom_right_y), (0, 255, 0), 3)  # Green box
