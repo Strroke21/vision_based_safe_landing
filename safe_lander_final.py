@@ -280,18 +280,17 @@ def send_position_setpoint(vehicle, pos_x, pos_y, pos_z):
         0, 0                        # yaw, yaw_rate (not used)
     )
 
-
-def send_distance_message(vehicle,z):
-    msg = vehicle.mav.distance_sensor_encode(
-        0, #time sync system boot !not used
-        20, #minimum distance
-        7000, #max distance
-        z, #current distance must be integer
-        0, #type=raw camera !not used
-        0, #onboard id !not used
-        mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, #camera facing down
-        0
-    )
+def send_land_message(x_ang,y_ang):
+    msg = vehicle.mav.landing_target_encode(
+        0,
+        0,
+        mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED,
+        x_ang,
+        y_ang,
+        0, #distance to marker (m)
+        0, #size_x (rad)
+        0, #size_y (rad)
+        ) 
     vehicle.mav.send(msg)
 
 def get_rangefinder_data(vehicle):
@@ -415,20 +414,13 @@ class SafeLander(Node):
             y_avg = (top_left_y + bottom_right_y) / 2
             # Compute landing coordinates
             x_ang = (x_avg - width / 2) * (hfov / width)
-            y_ang = ((height / 2) - y_avg) * (vfov / height)
+            y_ang = (y_avg - height / 2) * (vfov / height)
             x_dist = altitude * np.tan(np.radians(y_ang)) #swap x and y for down-facing camera
             y_dist = altitude * np.tan(np.radians(x_ang))
-
+            
+            send_land_message(vehicle, x_ang, y_ang)
             self.get_logger().info(f"Landing at x: {x_dist:.2f}, y: {y_dist:.2f}")
-            current_alt = -get_rangefinder_data(vehicle) #negative up
-            send_position_setpoint(vehicle, x_dist, y_dist, current_alt)
             cv2.rectangle(frame_colored, (top_left_x, top_left_y), (bottom_right_x, bottom_right_y), (0, 255, 0), 3)  # Green box
-
-
-        if (self.counter > 1) and (altitude >= final_alt):
-            send_velocity_setpoint(vehicle, 0, 0, landing_velocity)
-            self.get_logger().info(f"Descending to landing spot at {landing_velocity:.2f} m/s")
-            time.sleep(0.01)
 
         if altitude <= final_alt:
             VehicleMode(vehicle, "LAND")
@@ -446,6 +438,9 @@ class SafeLander(Node):
         altitude = get_rangefinder_data(vehicle)
         pos = global_position(vehicle)
         if self.search_counter == 1:
+            VehicleMode(vehicle, 'GUIDED')
+            print("Vehicle in GUIDED mode")
+            time.sleep(1)
             target_coords = find_safe_spot(frame, red_boundary_threshold, green_area_threshold, altitude, pos[0], pos[1])
             goto_waypoint(vehicle, target_coords[0], target_coords[1], altitude)
             dist = distance_between(pos[0], pos[1], target_coords[0], target_coords[1])
@@ -454,6 +449,10 @@ class SafeLander(Node):
                 dist = distance_between(pos[0], pos[1], target_coords[0], target_coords[1])
                 self.get_logger().info(f"Distance to target: {dist:.2f} m")
                 time.sleep(0.1)  
+            
+            VehicleMode(vehicle, "LAND")
+            self.get_logger().info("Landing Mode Activated")
+
         else:
             pass
 
@@ -465,10 +464,6 @@ def main(args=None):
             break
         else:
             print(f"Current mode: {mode} Curent altitude: {altitude:.2f} m")
-
-    VehicleMode(vehicle, 'GUIDED')
-    print("Vehicle in GUIDED mode")
-    time.sleep(1)
 
     rclpy.init(args=args)
     node = SafeLander()
