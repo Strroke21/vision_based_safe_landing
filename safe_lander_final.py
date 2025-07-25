@@ -475,6 +475,10 @@ if __name__ == '__main__':
     vehicle = connect(conn_string)
     print(f"Vehicle connected: {vehicle}")
     enable_data_stream(vehicle, stream_rate=100)
+    set_parameter(vehicle, 'PLND_ENABLED', 1)  
+    set_parameter(vehicle, 'PLND_TYPE', 1)  # mavlink
+    set_parameter(vehicle, 'PLND_EST_TYPE', 0)  # raw sensor
+    set_parameter(vehicle, 'LAND_SPEED', 30)  # 30 cm/s
     main()
 
 
