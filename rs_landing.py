@@ -12,7 +12,7 @@ from pymavlink import mavutil
 MAX_DISTANCE = 10.0
 
 hfov, vfov = 87.0, 58.0
-flatness, final_alt = 0.2, 2
+flatness, final_alt = 0.2, 4
 disparity_to_depth_scale = 0.0010000000474974513
 MAX_DISTANCE = 10.0
 
