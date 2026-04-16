@@ -404,7 +404,6 @@ class SafeLander(Node):
         self.get_logger().info(f"Differences in meters: {differences_in_meters}")
 
         if min_diff <= flatness and altitude >= final_alt:
-            self.counter += 1
             top_left_x = (min_diff_index % 3) * third_width
             top_left_y = (min_diff_index // 3) * third_height
             bottom_right_x = top_left_x + third_width
@@ -417,11 +416,21 @@ class SafeLander(Node):
             y_ang = (y_avg - height / 2) * (np.radians(vfov) / height)
             x_dist = altitude * np.tan(np.radians(-y_ang)) #swap x and y for down-facing camera
             y_dist = altitude * np.tan(np.radians(x_ang))
+            if abs(x_dist)<=safe_spot_dist_min and abs(y_dist)<=safe_spot_dist_min:
+                if (abs(x_dist)>=0.2) and abs(y_dist)>=0.2:
+                    self.counter += 1
+                    self.get_logger().info(f"Landing at x: {x_dist:.2f} m, y: {y_dist:.2f} m")
 
             # send_land_message(vehicle, x_ang, y_ang)
             if self.counter == 1:
                 send_position_setpoint(vehicle, x_dist, y_dist, -altitude)
-                
+                dist = sqrt(x_dist**2 + y_dist**2)
+                while dist > 0.5:
+                    self.get_logger().info(f"Distance to target: {dist:.2f} m")
+                    time.sleep(0.1)
+                VehicleMode(vehicle, "LAND")
+                self.get_logger().info("Landing Mode Activated")
+
             self.get_logger().info(f"Landing at x: {x_dist:.2f}, y: {y_dist:.2f}")
             cv2.rectangle(frame_colored, (top_left_x, top_left_y), (bottom_right_x, bottom_right_y), (0, 255, 0), 3)  # Green box
 
@@ -452,9 +461,8 @@ class SafeLander(Node):
                 dist = distance_between(pos[0], pos[1], target_coords[0], target_coords[1])
                 self.get_logger().info(f"Distance to target: {dist:.2f} m")
                 time.sleep(0.1)  
-            
-            VehicleMode(vehicle, "LAND")
-            self.get_logger().info("Landing Mode Activated")
+            send_velocity_setpoint(vehicle, 0, 0, landing_velocity) 
+            self.get_logger().info("Descending towards landing spot...")
 
         else:
             pass
