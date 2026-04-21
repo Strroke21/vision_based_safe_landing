@@ -425,9 +425,8 @@ class SafeLander(Node):
             if self.counter == 1:
                 send_position_setpoint(vehicle, x_dist, y_dist, -altitude)
                 dist = sqrt(x_dist**2 + y_dist**2)
-                while dist > 0.5:
-                    self.get_logger().info(f"Distance to target: {dist:.2f} m")
-                    time.sleep(0.1)
+                self.get_logger().info(f"Distance to target: {dist:.2f} m")
+                time.sleep(5)
                 VehicleMode(vehicle, "LAND")
                 self.get_logger().info("Landing Mode Activated")
 
@@ -486,10 +485,6 @@ if __name__ == '__main__':
     vehicle = connect(conn_string)
     print(f"Vehicle connected: {vehicle}")
     enable_data_stream(vehicle, stream_rate=100)
-    set_parameter(vehicle, 'PLND_ENABLED', 1)  
-    set_parameter(vehicle, 'PLND_TYPE', 1)  # mavlink
-    set_parameter(vehicle, 'PLND_EST_TYPE', 0)  # raw sensor
-    set_parameter(vehicle, 'LAND_SPEED', 30)  # 30 cm/s
     main()
 
 
