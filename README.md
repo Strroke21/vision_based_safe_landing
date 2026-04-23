@@ -4,7 +4,7 @@ https://github.com/Strroke21/V-SLAM-with-RTABMAP-and-Realsense-D4XX
 
 ## Pytorch Download for Jetson
 
-https://pypi.jetson-ai-lab.io/jp6/+simple/
+https://pypi.jetson-ai-lab.io/jp6/cu126/+simple/
 
 ```bash
 
