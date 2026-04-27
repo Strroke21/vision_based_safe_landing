@@ -293,18 +293,8 @@ while True:
                 set_parameter(vehicle,"WP_YAW_BEHAVIOR",0)
                 time.sleep(0.1)
                 send_position_setpoint(vehicle, x, y, 0, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
-                while True:
-                    current_lat, current_lon, heading = global_position(vehicle)
-                    dist_to_target = distance_between(current_lat, current_lon, coords[0], coords[1])
-                    print(f"Distance to target: {dist_to_target:.2f}m")
-                    if dist_to_target < 1.0:
-                        time.sleep(1)
-                        VehicleMode(vehicle,"LAND")
-                        print("Vehicle in LAND mode)")
-                        set_parameter(vehicle,"WP_YAW_BEHAVIOR",1)
-                        arming_status = vehicle.motors_armed()
-                        if arming_status == 128:
-                            print("Motors armed, landing in progress...")
-                        if arming_status!= 128:
-                            print("Motors disarmed. Landing complete.")
-                            break
+                dist = math.sqrt(x**2 + y**2)
+                time.sleep(int(abs(dist)))
+                VehicleMode(vehicle,"LAND")
+                time.sleep(0.1)
+                exit()
