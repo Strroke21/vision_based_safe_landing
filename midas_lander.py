@@ -36,13 +36,7 @@ vfov = 65*(math.pi/180)
 red_boundary_threshold = 0.05
 green_area_threshold = 1.0
 
-lander_alt = 15.0
-
-# altitude = 50
-# heading = 360
-
-# current_lat = 19.1346473
-# current_lon = 72.9108256
+lander_alt = 20
 
 def image_callback(msg):
     global frame_np, topic_delay
