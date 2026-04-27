@@ -192,8 +192,8 @@ def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude,
     black_mask = cv2.bitwise_not(cv2.bitwise_or(elevated_mask, boundary_mask))
 
     h, w = black_mask.shape
-    margin_y = int(0.02 * h)
-    margin_x = int(0.02* w)
+    margin_y = int(0.01 * h)
+    margin_x = int(0.01* w)
     black_mask[:margin_y, :] = 0
     black_mask[-margin_y:, :] = 0
     black_mask[:, :margin_x] = 0
