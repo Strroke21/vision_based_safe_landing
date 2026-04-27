@@ -34,7 +34,7 @@ hfov = 90*(math.pi/180)
 vfov = 65*(math.pi/180)
 
 red_boundary_threshold = 0.05
-green_area_threshold = 0.9
+green_area_threshold = 1.0
 
 lander_alt = 15.0
 
