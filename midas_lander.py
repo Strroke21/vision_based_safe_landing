@@ -308,6 +308,8 @@ while True:
                         print("Vehicle in LAND mode)")
                         set_parameter(vehicle,"WP_YAW_BEHAVIOR",1)
                         arming_status = vehicle.motors_armed()
+                        if arming_status == 128:
+                            print("Motors armed, landing in progress...")
                         if arming_status!= 128:
-                            print("Motors disarmed")
+                            print("Motors disarmed. Landing complete.")
                             break
