@@ -265,11 +265,21 @@ def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude,
         cv2.imwrite(os.path.join(save_dir, f"raw_image_{int(time.time())}.png"), frame)
         time.sleep(0.1)
         print("Image saved")
-        return east_meters, north_meters
+        return east_meters, north_meters, coords
 
     # cv2.imshow('Original Frame', frame)
     # cv2.imshow('Depth Segmentation', elevated_mask_bgr)
     # cv2.waitKey(0)
+
+def distance_between(current_lat, current_lon, target_lat, target_lon):
+            
+    R = 6378137  # Earth radius in meters
+    dlat = np.radians(current_lat - target_lat)
+    dlon = np.radians(current_lon - target_lon)
+    a = math.sin(dlat / 2)**2 + math.cos(np.radians(target_lat)) * math.cos(np.radians(current_lat)) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    distance = R * c
+    return distance #in meters
 
 vehicle = connect('tcp:127.0.0.1:5763')
 enable_data_stream(vehicle, 100)
@@ -284,13 +294,20 @@ while True:
         if frame_np is not None:
             counter+=1
             if counter==1:
-                x,y = find_safe_spot(frame_np, red_boundary_threshold, green_area_threshold, altitude, current_lat, current_lon,heading)
+                x,y,coords = find_safe_spot(frame_np, red_boundary_threshold, green_area_threshold, altitude, current_lat, current_lon,heading)
                 VehicleMode(vehicle,"GUIDED")
                 set_parameter(vehicle,"WP_YAW_BEHAVIOR",0)
                 time.sleep(0.1)
                 send_position_setpoint(vehicle, x, y, 0, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
-                time.sleep(5)
-                VehicleMode(vehicle,"LAND")
-                print("Vehicle in LAND mode)")
-                set_parameter(vehicle,"WP_YAW_BEHAVIOR",1)
-                exit()
+                while True:
+                    current_lat, current_lon, heading = global_position(vehicle)
+                    dist_to_target = distance_between(current_lat, current_lon, coords[0], coords[1])
+                    print(f"Distance to target: {dist_to_target:.2f}m")
+                    if dist_to_target < 1.0:
+                        VehicleMode(vehicle,"LAND")
+                        print("Vehicle in LAND mode)")
+                        set_parameter(vehicle,"WP_YAW_BEHAVIOR",1)
+                        arming_status = vehicle.motors_armed()
+                        if arming_status!= 128:
+                            print("Motors disarmed")
+                            break
