@@ -298,6 +298,7 @@ while True:
                     dist_to_target = distance_between(current_lat, current_lon, coords[0], coords[1])
                     print(f"Distance to target: {dist_to_target:.2f}m")
                     if dist_to_target < 1.0:
+                        time.sleep(1)
                         VehicleMode(vehicle,"LAND")
                         print("Vehicle in LAND mode)")
                         set_parameter(vehicle,"WP_YAW_BEHAVIOR",1)
