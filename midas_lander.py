@@ -320,7 +320,7 @@ while True:
                     print("Descending...")
                     send_velocity_setpoint(vehicle, 0, 0, landing_velocity, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
                     altitude = current_alt(vehicle)
-                    if altitude <= lander_final_alt*0.8:
+                    if altitude <= lander_final_alt*0.9:
                         print("Final descent...")
                         break
 
@@ -339,7 +339,7 @@ while True:
                     print("Descending...")
                     send_velocity_setpoint(vehicle, 0, 0, landing_velocity, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
                     altitude = current_alt(vehicle)
-                    if altitude <= lander_min_alt*0.8:
+                    if altitude <= lander_min_alt*0.9:
                         VehicleMode(vehicle,"LAND")
                         time.sleep(0.1)
                         break
