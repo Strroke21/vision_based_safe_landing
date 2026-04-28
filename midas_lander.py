@@ -33,7 +33,7 @@ feature_extractor = DPTImageProcessor.from_pretrained("Intel/dpt-hybrid-midas")
 hfov = 90*(math.pi/180)
 vfov = 65*(math.pi/180)
 
-red_boundary_threshold = 0.05
+red_boundary_threshold = 0.1
 green_area_threshold = 1.0
 
 lander_alt = 20
@@ -288,12 +288,14 @@ while True:
         if frame_np is not None:
             counter+=1
             if counter==1:
-                x,y,coords = find_safe_spot(frame_np, red_boundary_threshold, green_area_threshold, altitude, current_lat, current_lon,heading)
                 VehicleMode(vehicle,"GUIDED")
+                time.sleep(1)
+                x,y,coords = find_safe_spot(frame_np, red_boundary_threshold, green_area_threshold, altitude, current_lat, current_lon,heading)
                 set_parameter(vehicle,"WP_YAW_BEHAVIOR",0)
                 time.sleep(0.1)
                 send_position_setpoint(vehicle, x, y, 0, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
                 dist = math.sqrt(x**2 + y**2)
+                print(f"Distance to target: {dist:.2f}m")
                 time.sleep(int(abs(dist)))
                 VehicleMode(vehicle,"LAND")
                 time.sleep(0.1)
