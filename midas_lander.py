@@ -317,9 +317,9 @@ while True:
                 print(f"Distance to target: {dist:.2f}m")
                 time.sleep(int(abs(dist)))
                 while True:
-                    print("Descending...")
                     send_velocity_setpoint(vehicle, 0, 0, landing_velocity, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
                     altitude = current_alt(vehicle)
+                    print(f"Altitude: {altitude} m.")
                     if altitude <= lander_final_alt*0.9:
                         print("Final descent...")
                         break
@@ -336,9 +336,9 @@ while True:
                 set_parameter(vehicle,"WP_YAW_BEHAVIOR",1)
                 time.sleep(0.1)
                 while True:
-                    print("Descending...")
                     send_velocity_setpoint(vehicle, 0, 0, landing_velocity, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
                     altitude = current_alt(vehicle)
+                    print(f"Altitude: {altitude} m.")
                     if altitude <= lander_min_alt*0.9:
                         VehicleMode(vehicle,"LAND")
                         time.sleep(0.1)
