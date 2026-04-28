@@ -27,6 +27,7 @@ model.load_state_dict(state_dict, strict=False)
 model.to(device)
 model.eval()
 frame_np = None
+counter = 0
 
 feature_extractor = DPTImageProcessor.from_pretrained("Intel/dpt-hybrid-midas")
 
@@ -36,7 +37,10 @@ vfov = 65*(math.pi/180)
 red_boundary_threshold = 0.1
 green_area_threshold = 1.0
 
-lander_alt = 20
+lander_alt = 50
+lander_final_alt = 15
+lander_min_alt = 5
+landing_velocity = 0.3
 
 def image_callback(msg):
     global frame_np, topic_delay
@@ -136,6 +140,21 @@ def send_position_setpoint(vehicle, pos_x, pos_y, pos_z,FRAME):
         0b110111111000,        # type_mask (only for postion)
         pos_x, pos_y, pos_z,   # position 
         0, 0, 0,                 # velocity in m/s (not used)
+        0, 0, 0,                    # acceleration (not used)
+        0, 0                        # yaw, yaw_rate (not used)
+    )
+
+def send_velocity_setpoint(vehicle, vx, vy, vz, FRAME):
+
+    # Send MAVLink command to set velocity
+    vehicle.mav.set_position_target_local_ned_send(
+        0,                          # time_boot_ms (not used)
+        vehicle.target_system,       # target_system
+        vehicle.target_component,    # target_component
+        FRAME,  # frame
+        0b0000111111000111,        # type_mask (only vx, vy, vz, yaw_rate)
+        0, 0, 0,                    # position (not used)
+        vx, vy, vz,                 # velocity in m/s
         0, 0, 0,                    # acceleration (not used)
         0, 0                        # yaw, yaw_rate (not used)
     )
@@ -275,16 +294,16 @@ def distance_between(current_lat, current_lon, target_lat, target_lon):
     distance = R * c
     return distance #in meters
 
-vehicle = connect('tcp:127.0.0.1:5763')
+vehicle = connect('udp:127.0.0.1:14561')
 enable_data_stream(vehicle, 100)
-counter = 0
+
 while True:
     rclpy.spin_once(ros_node, timeout_sec=0.01)
     altitude = current_alt(vehicle) #get_rangefinder_data(vehicle)
     current_lat, current_lon, heading = global_position(vehicle)
     mode = vehicle.flightmode
     print(f"Altitude: {altitude:.2f}m, Lat: {current_lat:.7f}, Lon: {current_lon:.7f}, Heading: {heading:.2f}° mode: {mode}")
-    if altitude<=lander_alt and mode=="LAND":
+    if lander_final_alt < altitude <= lander_alt and mode=="LAND":
         if frame_np is not None:
             counter+=1
             if counter==1:
@@ -297,6 +316,32 @@ while True:
                 dist = math.sqrt(x**2 + y**2)
                 print(f"Distance to target: {dist:.2f}m")
                 time.sleep(int(abs(dist)))
-                VehicleMode(vehicle,"LAND")
+                while True:
+                    print("Descending...")
+                    send_velocity_setpoint(vehicle, 0, 0, landing_velocity, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
+                    altitude = current_alt(vehicle)
+                    if altitude <= lander_final_alt*0.8:
+                        print("Final descent...")
+                        break
+
+    elif lander_min_alt < altitude <= lander_final_alt and mode=="GUIDED":
+        if frame_np is not None:
+            counter+=1
+            if counter==2:
+                x,y,coords = find_safe_spot(frame_np, red_boundary_threshold, green_area_threshold, altitude, current_lat, current_lon,heading)
+                dist = math.sqrt(x**2 + y**2)
+                print(f"Distance to target: {dist:.2f}m")
+                send_position_setpoint(vehicle, x, y, 0, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
+                time.sleep(int(abs(dist)))
+                set_parameter(vehicle,"WP_YAW_BEHAVIOR",1)
                 time.sleep(0.1)
-                exit()
+                while True:
+                    print("Descending...")
+                    send_velocity_setpoint(vehicle, 0, 0, landing_velocity, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
+                    altitude = current_alt(vehicle)
+                    if altitude <= lander_min_alt*0.8:
+                        VehicleMode(vehicle,"LAND")
+                        time.sleep(0.1)
+                        break
+                        
+
