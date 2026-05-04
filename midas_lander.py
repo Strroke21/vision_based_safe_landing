@@ -343,5 +343,5 @@ while True:
                         VehicleMode(vehicle,"LAND")
                         time.sleep(0.1)
                         break
-                        
 
+                    
