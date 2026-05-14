@@ -164,7 +164,7 @@ def set_parameter(vehicle, param_name, param_value, param_type=mavutil.mavlink.M
     vehicle.mav.param_set_send(vehicle.target_system,vehicle.target_component,param_name.encode('utf-8'),param_value,param_type)
     #usage set_parameter(vehicle, "PARAM_NAME", 1)
 
-def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude, current_lat,current_lon, heading):
+def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude, current_lat,current_lon, heading, elevation_threshold):
     frame = cv2.resize(frame, (640, 480))
     img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     inputs = feature_extractor(images=img, return_tensors="pt").to(device)
@@ -190,7 +190,7 @@ def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude,
     # ======================================================
 
     # Threshold to get elevated regions
-    threshold = 128
+    threshold = elevation_threshold
     _, elevated_mask = cv2.threshold(depth_map, threshold, 255, cv2.THRESH_BINARY)
     elevated_mask = elevated_mask.astype(np.uint8)
 
@@ -205,8 +205,8 @@ def find_safe_spot(frame,red_boundary_threshold, green_area_threshold, altitude,
     black_mask = cv2.bitwise_not(cv2.bitwise_or(elevated_mask, boundary_mask))
 
     h, w = black_mask.shape
-    margin_y = int(0.025 * h)
-    margin_x = int(0.025* w)
+    margin_y = int(0.02* h)
+    margin_x = int(0.02* w)
     black_mask[:margin_y, :] = 0
     black_mask[-margin_y:, :] = 0
     black_mask[:, :margin_x] = 0
@@ -309,7 +309,7 @@ while True:
             if counter==1:
                 VehicleMode(vehicle,"GUIDED")
                 time.sleep(1)
-                x,y,coords = find_safe_spot(frame_np, red_boundary_threshold, green_area_threshold, altitude, current_lat, current_lon,heading)
+                x,y,coords = find_safe_spot(frame_np, red_boundary_threshold, green_area_threshold, altitude, current_lat, current_lon,heading, elevation_threshold=96)
                 set_parameter(vehicle,"WP_YAW_BEHAVIOR",0)
                 time.sleep(0.1)
                 send_position_setpoint(vehicle, x, y, 0, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
@@ -328,7 +328,7 @@ while True:
         if frame_np is not None:
             counter+=1
             if counter==2:
-                x,y,coords = find_safe_spot(frame_np, red_boundary_threshold, green_area_threshold, altitude, current_lat, current_lon,heading)
+                x,y,coords = find_safe_spot(frame_np, red_boundary_threshold, green_area_threshold, altitude, current_lat, current_lon,heading, elevation_threshold=64)
                 dist = math.sqrt(x**2 + y**2)
                 print(f"Distance to target: {dist:.2f}m")
                 send_position_setpoint(vehicle, x, y, 0, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
